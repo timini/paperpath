@@ -42,7 +42,8 @@ for (const j of JOURNEYS) {
     // Firestore can't store arrays inside arrays (payoff matrices, coordinates), so widget
     // parameters are kept as a JSON string.
     const interactive = n.interactive && { widget: n.interactive.widget, caption: n.interactive.caption, altText: n.interactive.altText, paramsJson: JSON.stringify(n.interactive.params) };
-    writes.push({ update: { name: `${root}/journeys/${j.id}/nodes/${n.id}`, fields: toFields({ ...n, interactive, order }) } });
+    const lesson = n.lesson.map((l) => (l.visual ? { ...l, visual: { widget: l.visual.widget, caption: l.visual.caption, altText: l.visual.altText, paramsJson: JSON.stringify(l.visual.params) } } : l));
+    writes.push({ update: { name: `${root}/journeys/${j.id}/nodes/${n.id}`, fields: toFields({ ...n, lesson, interactive, order }) } });
   });
 }
 

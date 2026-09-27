@@ -16,7 +16,7 @@ Live with ten free journeys for landmark papers, from Hubble (1929) to AlphaFold
 ```
 docs/                 spec and plan
 firebase.json         hosting, Firestore and auth config
-firestore.rules       security rules (owner-only user data, one-time free journey, no client entitlements)
+firestore.rules       security rules (public journeys, owner-only user data, signed-in journey requests, no client entitlements)
 web/                  the app (React, TypeScript, Vite)
   src/content/        schema, graph rules, quiz grading, validator, and the ten journeys
   src/widgets/        the vetted interactive widget library and its registry

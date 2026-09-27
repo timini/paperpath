@@ -1,12 +1,15 @@
 // @ts-nocheck
 // Checks firestore.rules against the live project using throwaway anonymous accounts.
 //   npm run test:rules
-const KEY='AIzaSyDCV7gR6CCBeeH_6Wywh2eR_At-y0fRqq8';
-const signUp = () => fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})}).then(r=>r.json());
+import { firebaseConfig } from "../src/lib/firebase";
+const KEY = firebaseConfig.apiKey;
+// The API key only accepts requests from the app's own domains.
+const REFERER = { Referer: 'https://paperpath-learn.web.app/' };
+const signUp = () => fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${KEY}`,{method:'POST',headers:{'Content-Type':'application/json',...REFERER},body:JSON.stringify({returnSecureToken:true})}).then(r=>r.json());
 const A = await signUp(), Bu = await signUp();
 const base='https://firestore.googleapis.com/v1/projects/paperpath-learn/databases/(default)/documents';
 const val = v => typeof v==='number' ? {integerValue:String(v)} : typeof v==='string' ? {stringValue:v} : {mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,val(x)]))}};
-const req = (tok, method, path, fields, mask) => fetch(`${base}/${path}${mask?'?'+mask.map(m=>'updateMask.fieldPaths='+m).join('&'):''}`,{method,headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json'},body:fields?JSON.stringify({fields:Object.fromEntries(Object.entries(fields).map(([k,v])=>[k,val(v)]))}):undefined}).then(r=>r.status);
+const req = (tok, method, path, fields, mask) => fetch(`${base}/${path}${mask?'?'+mask.map(m=>'updateMask.fieldPaths='+m).join('&'):''}`,{method,headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json',...REFERER},body:fields?JSON.stringify({fields:Object.fromEntries(Object.entries(fields).map(([k,v])=>[k,val(v)]))}):undefined}).then(r=>r.status);
 const t=A.idToken, u=A.localId;
 const cases = [
   ['create own profile with free journey', await req(t,'PATCH',`users/${u}`,{xp:0,freeJourneyId:'turing-1936'}), 200],

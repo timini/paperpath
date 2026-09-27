@@ -50,7 +50,10 @@ interface Store extends Saved {
   synced: boolean;
   entitlements: Set<string>;
   hasAccess: (journeyId: string) => boolean;
-  claimFree: (journeyId: string) => Promise<void>;
+  /** Signed in with a real account (not anonymous). */
+  signedIn: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
   openNode: (journeyId: string, nodeId: string) => void;
   recordQuiz: (journeyId: string, nodeId: string, score: number, passed: boolean, testOut: boolean, isPaper: boolean) => number;
   reset: () => void;
@@ -164,18 +167,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSaved(fn);
   };
 
-  const hasAccess = useCallback(
-    (journeyId: string) => saved.profile.freeJourneyId === journeyId || entitlements.has(journeyId),
-    [saved.profile.freeJourneyId, entitlements],
-  );
+  // Every existing journey is free to read (SPEC section 6); only generating a new one is paid.
+  const hasAccess = useCallback((journeyId: string) => journeyId.length > 0, []);
 
-  const claimFree = async (journeyId: string) => {
-    if (saved.profile.freeJourneyId) return;
-    update(journeyId, (s) => ({
-      ...s,
-      profile: { ...s.profile, freeJourneyId: journeyId },
-      progress: { ...s.progress, [journeyId]: s.progress[journeyId] ?? { startedAt: Date.now(), updatedAt: Date.now(), nodes: {} } },
-    }));
+  /**
+   * Google sign-in. An anonymous learner's account is upgraded in place, so their progress
+   * keeps its owner. If that Google account already exists, sign into it instead; local
+   * progress is merged into it on load.
+   */
+  const signInWithGoogle = async () => {
+    const { auth, authMod } = await firebase();
+    const provider = new authMod.GoogleAuthProvider();
+    const current = auth.currentUser;
+    try {
+      if (current?.isAnonymous) {
+        const cred = await authMod.linkWithPopup(current, provider);
+        setUser(cred.user);
+        await cred.user.reload();
+      } else await authMod.signInWithPopup(auth, provider);
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      if (code === "auth/credential-already-in-use" || code === "auth/email-already-in-use") {
+        const cred = authMod.GoogleAuthProvider.credentialFromError(e as never);
+        if (cred) {
+          pending.current.add(PROFILE);
+          Object.keys(saved.progress).forEach((j) => pending.current.add(j));
+          await authMod.signInWithCredential(auth, cred);
+          return;
+        }
+      }
+      if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") {
+        if (current?.isAnonymous) await authMod.linkWithRedirect(current, provider);
+        else await authMod.signInWithRedirect(auth, provider);
+        return;
+      }
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") throw e;
+    }
+  };
+
+  const signOut = async () => {
+    const { auth, authMod } = await firebase();
+    await authMod.signOut(auth);
+    // A fresh anonymous session starts with empty local progress.
+    setSaved(EMPTY);
+    setEntitlements(new Set());
   };
 
   const openNode = (journeyId: string, nodeId: string) => {
@@ -216,7 +251,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const reset = () => setSaved({ ...EMPTY, profile: { ...EMPTY.profile, freeJourneyId: saved.profile.freeJourneyId } });
 
   const value = useMemo<Store>(
-    () => ({ ...saved, user, synced, entitlements, hasAccess, claimFree, openNode, recordQuiz, reset }),
+    () => ({ ...saved, user, synced, entitlements, hasAccess, signedIn: !!user && !user.isAnonymous, signInWithGoogle, signOut, openNode, recordQuiz, reset }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [saved, user, synced, entitlements, hasAccess],
   );

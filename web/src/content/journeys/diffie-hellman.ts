@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/diffie-hellman";
 
 const diffieHellman: Journey = {
   id: "diffie-hellman-1976",
@@ -519,4 +521,4 @@ const diffieHellman: Journey = {
   ],
 };
 
-export default diffieHellman;
+export default withVisuals(diffieHellman, visuals);

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { withJourney } from "../components/WithJourney";
 import type { Journey } from "../content/schema";
-import { nodeStates, prerequisites, previewNodeId } from "../content/graph";
+import { nodeStates, prerequisites, recommendedOrder } from "../content/graph";
+import { argumentMap } from "../content/diagram";
 import { useStore } from "../lib/store";
 import { RichText, Inline } from "../components/RichText";
 import Quiz from "../components/Quiz";
@@ -17,20 +18,17 @@ function NodePage({ journey }: { journey: Journey }) {
   const nav = useNavigate();
   const [mode, setMode] = useState<"learn" | "testout">("learn");
   const [earned, setEarned] = useState<number | null>(null);
-  const access = store.hasAccess(journey.id);
-  const isPreview = previewNodeId(journey) === nodeId;
   const states = nodeStates(journey, store.progress[journey.id]);
   const state = states.get(nodeId);
 
   useEffect(() => {
-    if (node && (access || isPreview) && state !== "locked") store.openNode(journey.id, node.id);
+    if (node && state !== "locked") store.openNode(journey.id, node.id);
     setEarned(null);
     setMode("learn");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyId, nodeId]);
 
   if (!node) return <NotFound />;
-  if (!access && !isPreview) return <Navigate to={`/unlock/${journey.id}`} replace />;
   if (state === "locked") {
     const missing = (prerequisites(journey).get(node.id) ?? []).filter((p) => !["mastered", "tested-out"].includes(states.get(p) ?? "locked"));
     return (
@@ -44,15 +42,19 @@ function NodePage({ journey }: { journey: Journey }) {
   }
 
   const done = state === "mastered" || state === "tested-out";
-  const dependants = journey.edges.filter((e) => e.from === node.id).map((e) => journey.nodes.find((n) => n.id === e.to)!);
-  const afterStates = nodeStates(journey, store.progress[journey.id]);
-  const unlockedNow = dependants.filter((d) => afterStates.get(d.id) !== "locked");
+  const order = recommendedOrder(journey);
+  const stepNo = order.findIndex((n) => n.id === node.id) + 1;
+  // The next step to take: the first unfinished, unlocked step after this one, else any earlier one.
+  const open = (id: string) => !["mastered", "tested-out", "locked"].includes(states.get(id) ?? "locked");
+  const nextStep = order.slice(stepNo).find((n) => open(n.id)) ?? order.find((n) => n.id !== node.id && open(n.id));
+  const nextNo = nextStep ? order.indexOf(nextStep) + 1 : 0;
+  const visual = node.interactive ?? (node.kind === "paper" ? argumentMap(journey) : undefined);
 
   return (
     <article className="wrap narrow node" style={{ "--accent": journey.accent } as React.CSSProperties}>
       <nav className="crumbs"><Link to={`/j/${journey.id}`}>← {journey.title}</Link></nav>
       <header className="n-head">
-        <span className="chip">{node.kind === "paper" ? "The paper" : "Concept"} · {node.estimatedMinutes} min{done ? ` · ${state === "tested-out" ? "tested out" : "mastered"}` : ""}</span>
+        <span className="chip">Step {stepNo} of {order.length}{node.kind === "paper" ? " · the paper" : ""} · {node.estimatedMinutes} min{done ? ` · ${state === "tested-out" ? "tested out" : "mastered"}` : ""}</span>
         <h1>{node.title}</h1>
         <div className="why"><strong>Why you need this.</strong> <Inline text={node.whyYouNeedThis} /></div>
         {!done && node.kind !== "paper" && (
@@ -65,18 +67,21 @@ function NodePage({ journey }: { journey: Journey }) {
       {mode === "learn" && (
         <>
           {node.lesson.map((s, i) => (
-            <section key={i} className="lesson">
-              <h2>{s.heading}</h2>
-              <RichText text={s.body} />
-            </section>
+            <div key={i}>
+              <section className="lesson">
+                <h2>{s.heading}</h2>
+                <RichText text={s.body} />
+                {s.visual && <Widget spec={s.visual} className="inline-visual" />}
+              </section>
+              {/* The node's main interactive sits right after the first explanation. */}
+              {i === 0 && visual && (
+                <section className="lesson">
+                  <h2>{node.kind === "paper" ? "See the argument" : "Try it"}</h2>
+                  <Widget spec={visual} />
+                </section>
+              )}
+            </div>
           ))}
-
-          {node.interactive && (
-            <section className="lesson">
-              <h2>Try it</h2>
-              <Widget spec={node.interactive} />
-            </section>
-          )}
 
           {node.workedExample && (
             <section className="lesson worked">
@@ -111,17 +116,12 @@ function NodePage({ journey }: { journey: Journey }) {
       {(done || earned !== null) && (
         <section className="next">
           {earned ? <p className="xp">+{earned} XP</p> : null}
-          {node.kind === "paper" ? (
+          {node.kind === "paper" || !nextStep ? (
             <button className="btn primary block" onClick={() => nav(`/j/${journey.id}/done`)}>Finish the journey</button>
           ) : (
-            <>
-              {unlockedNow.length > 0 && <h2>Unlocked next</h2>}
-              {unlockedNow.map((d) => (
-                <Link key={d.id} className="btn primary block" to={access ? `/j/${journey.id}/n/${d.id}` : `/unlock/${journey.id}`}>{d.title} →</Link>
-              ))}
-              <Link className="btn block" to={`/j/${journey.id}`}>Back to the map</Link>
-            </>
+            <Link className="btn primary block" to={`/j/${journey.id}/n/${nextStep.id}`}>Next: step {nextNo}, {nextStep.title} →</Link>
           )}
+          <Link className="btn block" to={`/j/${journey.id}`}>Back to all steps</Link>
         </section>
       )}
     </article>

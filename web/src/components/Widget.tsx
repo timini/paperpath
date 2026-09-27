@@ -13,11 +13,11 @@ class Boundary extends Component<{ fallback: ReactNode; children: ReactNode }, {
   }
 }
 
-export default function Widget({ spec }: { spec: Interactive }) {
+export default function Widget({ spec, className = "" }: { spec: Interactive; className?: string }) {
   const parsed = parseWidget(spec.widget, spec.params);
   const fallback = <p className="note">{spec.altText}</p>;
   return (
-    <figure className="widget">
+    <figure className={`widget ${className}`}>
       {parsed.ok ? (
         <Boundary fallback={fallback}>
           <parsed.def.component params={parsed.params} />

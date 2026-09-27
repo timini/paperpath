@@ -190,7 +190,7 @@ export function AttentionHeatmap({ params }: { params: z.infer<typeof attentionS
             <text x={62} y={40 + i * cell + cell / 2 + 3} className="w-tiny end">{params.tokens[i]}</text>
             {row.map((w, j) => (
               <rect key={j} x={70 + j * cell} y={40 + i * cell} width={cell - 2} height={cell - 2} rx={3}
-                fill={`rgba(37, 99, 235, ${0.08 + 0.92 * w})`} className={i === qi ? "w-hm sel" : "w-hm"} onClick={() => setQi(i)} />
+                fill={`rgba(88, 196, 221, ${0.06 + 0.94 * w})`} className={i === qi ? "w-hm sel" : "w-hm"} onClick={() => setQi(i)} />
             ))}
           </g>
         ))}

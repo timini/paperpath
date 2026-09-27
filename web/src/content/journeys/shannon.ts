@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/shannon";
 
 const shannon: Journey = {
   id: "shannon-1948",
@@ -629,4 +631,4 @@ const shannon: Journey = {
   ],
 };
 
-export default shannon;
+export default withVisuals(shannon, visuals);

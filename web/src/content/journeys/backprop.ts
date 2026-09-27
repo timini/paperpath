@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/backprop";
 
 const backprop: Journey = {
   id: "backprop-1986",
@@ -582,4 +584,4 @@ const backprop: Journey = {
   ],
 };
 
-export default backprop;
+export default withVisuals(backprop, visuals);

@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/watson-crick";
 
 const watsonCrick: Journey = {
   id: "watson-crick-1953",
@@ -586,4 +588,4 @@ const watsonCrick: Journey = {
   ],
 };
 
-export default watsonCrick;
+export default withVisuals(watsonCrick, visuals);

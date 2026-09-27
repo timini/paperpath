@@ -45,13 +45,13 @@ async function passNode(jid, nid) {
 }
 
 await p.goto(B+'/j/turing-1936',{waitUntil:'load'});
-await p.click('button:has-text("Start as your free journey")');
-await p.click('button:has-text("Yes, start it")');
+await p.click('button:has-text("Start with step 1")');
 await p.waitForURL(/\/n\/algorithm/);
+console.log('step chip:', (await p.textContent('.n-head .chip'))?.trim());
 await passNode('turing-1936','algorithm');
 await passNode('turing-1936','symbols');
 await p.goto(B+'/j/turing-1936',{waitUntil:'load'});
-const states = await p.$$eval('.pnode', els=>els.map(e=>e.querySelector('.pnode-title').textContent+': '+e.querySelector('.pnode-state').textContent.split(' · ')[0]));
+const states = await p.$$eval('.step', els=>els.map(e=>e.querySelector('.step-title').textContent+': '+e.querySelector('.step-meta').textContent.split(' · ')[0]));
 console.log(states.slice(0,4).join(' | '));
 console.log('header:', (await p.textContent('.meters')).replace(/\s+/g,' '));
 const fsCheck = async()=> p.evaluate(async()=>{
@@ -64,10 +64,14 @@ const fsCheck = async()=> p.evaluate(async()=>{
 await p.waitForTimeout(8000); console.log('firestore after passing:', JSON.stringify(await fsCheck()));
 // Clear local storage: progress must come back from Firestore for the same anonymous user.
 await p.evaluate(()=>localStorage.clear()); await p.reload({waitUntil:'load'}); await p.waitForTimeout(3000);
-const after = await p.$$eval('.pnode', els=>els.slice(0,2).map(e=>e.querySelector('.pnode-state').textContent.split(' · ')[0]));
+const after = await p.$$eval('.step', els=>els.slice(0,2).map(e=>e.querySelector('.step-meta').textContent.split(' · ')[0]));
 console.log('after clearing localStorage:', after.join(', '));
 // Another journey: preview is free, the rest goes to the paywall.
-await p.goto(B+'/j/nash-1950/n/best-response',{waitUntil:'load'}); await p.waitForTimeout(1500); console.log('non-preview node ->', new URL(p.url()).pathname);
-await p.goto(B+'/j/nash-1950/n/games',{waitUntil:'load'}); console.log('preview node ->', new URL(p.url()).pathname);
+// Every journey is free: a first step opens directly; a later step shows what to do first.
+await p.goto(B+'/j/nash-1950/n/games',{waitUntil:'load'}); await p.waitForSelector('.n-head'); console.log('nash step 1:', (await p.textContent('.n-head .chip'))?.trim());
+await p.goto(B+'/j/nash-1950/n/best-response',{waitUntil:'load'}); await p.waitForSelector('h1'); console.log('nash step 2 before step 1:', (await p.textContent('h1'))?.trim());
+await p.goto(B+'/unlock/nash-1950',{waitUntil:'load'}); await p.waitForTimeout(800); console.log('old paywall url ->', new URL(p.url()).pathname);
+// A diagram plays and steps.
+await p.goto(B+'/j/turing-1936/n/countable',{waitUntil:'load'}).catch(()=>{});
 console.log('errors:', bad.slice(0,5));
 await b.close();

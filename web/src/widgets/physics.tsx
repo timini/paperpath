@@ -160,14 +160,14 @@ export function LorenzAttractor({ params }: { params: z.infer<typeof lorenzSchem
       trail.forEach((p, i) => (i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))));
       ctx.stroke();
     };
-    draw(s.trailA, "#2563eb");
-    draw(s.trailB, "#e11d48");
+    draw(s.trailA, "#58c4dd");
+    draw(s.trailB, "#f7d96f");
   }, [t, w, h]);
 
   return (
     <div ref={wrap}>
       <canvas ref={canvas} width={w} height={h} className="w-canvas" role="img"
-        aria-label={`Two Lorenz trajectories, blue and red, starting ${params.delta} apart. Current separation ${fmt(sep, 2)}.`} />
+        aria-label={`Two Lorenz trajectories, blue and yellow, starting ${params.delta} apart. Current separation ${fmt(sep, 2)}.`} />
       <Controls>
         <Slider label="ρ (heating strength)" value={rho} min={0} max={40} step={0.5} onChange={setRho} />
         <button className="btn" onClick={() => setRunning((r) => !r)}>{running ? "Pause" : "Run"}</button>

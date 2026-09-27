@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/lorenz";
 
 const lorenz: Journey = {
   id: "lorenz-1963",
@@ -441,7 +443,7 @@ const lorenz: Journey = {
       interactive: {
         widget: "lorenz-attractor",
         params: { sigma: 10, rho: 28, beta: 2.6667, delta: 0.00001 },
-        caption: "Two runs, blue and red, start 0.00001 apart. Watch the separation readout: nothing for a while, then sudden divergence.",
+        caption: "Two runs, blue and yellow, start 0.00001 apart. Watch the separation readout: nothing for a while, then sudden divergence.",
         altText: "Two Lorenz trajectories that overlap at first and then separate completely, with a readout of their separation.",
       },
       inThePaper: {
@@ -654,4 +656,4 @@ const lorenz: Journey = {
   ],
 };
 
-export default lorenz;
+export default withVisuals(lorenz, visuals);

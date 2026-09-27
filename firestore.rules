@@ -14,6 +14,21 @@ service cloud.firestore {
       }
     }
 
+    // "Generate a journey for your paper" requests (SPEC section 6). Signed-in (non-anonymous)
+    // users create their own; only the backend changes status.
+    match /journeyRequests/{requestId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'source', 'note', 'status', 'createdAt'])
+        && request.resource.data.source is string && request.resource.data.source.size() > 0 && request.resource.data.source.size() <= 500
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.status == 'requested'
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
     match /users/{uid} {
       function isOwner() {
         return request.auth != null && request.auth.uid == uid;

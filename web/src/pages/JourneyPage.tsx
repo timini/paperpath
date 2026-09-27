@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { withJourney } from "../components/WithJourney";
-import { completion, depths, levels, nodeStates, previewNodeId } from "../content/graph";
-import type { Journey, NodeState } from "../content/schema";
+import { completion, levels, nodeStates, prerequisites, recommendedOrder } from "../content/graph";
+import type { Journey, JourneyNode, NodeState } from "../content/schema";
 import { useStore } from "../lib/store";
 import { Inline, RichText } from "../components/RichText";
 
@@ -15,45 +15,36 @@ const STATE_LABEL: Record<NodeState, string> = {
 };
 const ICON: Record<NodeState, string> = { locked: "🔒", available: "●", "in-progress": "◐", mastered: "✓", "tested-out": "⚡" };
 
-function PathView({ journey, states, access, preview }: { journey: Journey; states: Map<string, NodeState>; access: boolean; preview: string }) {
-  const lv = levels(journey);
+function PathView({ journey, states, order, next }: { journey: Journey; states: Map<string, NodeState>; order: JourneyNode[]; next?: string }) {
+  const stepOf = new Map(order.map((n, i) => [n.id, i + 1]));
+  const pre = prerequisites(journey);
   return (
-    <ol className="path">
-      {lv.map((level, i) => (
-        <li key={i} className="level">
-          <div className="level-label">{i === lv.length - 1 ? "Goal" : `Level ${i + 1}`}</div>
-          <div className="level-nodes">
-            {level.map((n) => {
-              const st = states.get(n.id)!;
-              const reachable = access || n.id === preview;
-              const locked = st === "locked" || !reachable;
-              return (
-                <Link key={n.id} to={locked && st === "locked" ? "#" : `/j/${journey.id}/n/${n.id}`}
-                  onClick={(e) => st === "locked" && e.preventDefault()}
-                  className={`pnode s-${st} ${n.kind === "paper" ? "paper" : ""} ${!reachable && st !== "locked" ? "paywalled" : ""}`}
-                  aria-disabled={st === "locked"}>
-                  <span className="pnode-icon" aria-hidden="true">{ICON[st]}</span>
-                  <span className="pnode-body">
-                    <span className="pnode-title">{n.title}</span>
-                    <span className="pnode-state">
-                      {STATE_LABEL[st]}
-                      {n.id === preview && !access ? " · free preview" : ""}
-                      {!reachable && st !== "locked" ? " · unlock journey" : ""}
-                      {" · "}{n.estimatedMinutes} min
-                    </span>
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </li>
-      ))}
+    <ol className="steps">
+      {order.map((n, i) => {
+        const st = states.get(n.id)!;
+        const waiting = (pre.get(n.id) ?? []).filter((p) => !["mastered", "tested-out"].includes(states.get(p)!)).map((p) => stepOf.get(p));
+        const isNext = n.id === next;
+        return (
+          <li key={n.id} className={`step s-${st} ${isNext ? "next" : ""} ${n.kind === "paper" ? "paper" : ""}`}>
+            <span className="step-num" aria-hidden="true">{st === "mastered" || st === "tested-out" ? "✓" : i + 1}</span>
+            <Link to={st === "locked" ? "#" : `/j/${journey.id}/n/${n.id}`} onClick={(e) => st === "locked" && e.preventDefault()} aria-disabled={st === "locked"} className="step-card">
+              {isNext && <span className="step-next">Next up</span>}
+              <span className="step-title"><span className="sr-only">Step {i + 1}: </span>{n.title}</span>
+              <span className="step-meta">
+                {STATE_LABEL[st]}
+                {st === "locked" && waiting.length ? ` · after step${waiting.length > 1 ? "s" : ""} ${waiting.join(" and ")}` : ""}
+                {" · "}{n.estimatedMinutes} min
+              </span>
+            </Link>
+          </li>
+        );
+      })}
     </ol>
   );
 }
 
-function GraphView({ journey, states, onOpen }: { journey: Journey; states: Map<string, NodeState>; onOpen: (id: string) => void }) {
-  const d = depths(journey);
+function GraphView({ journey, states, order, onOpen }: { journey: Journey; states: Map<string, NodeState>; order: JourneyNode[]; onOpen: (id: string) => void }) {
+  const stepOf = new Map(order.map((n, i) => [n.id, i + 1]));
   const lv = levels(journey);
   const W = 190, H = 96, gapX = 24, gapY = 56;
   const widest = Math.max(...lv.map((l) => l.length));
@@ -92,7 +83,7 @@ function GraphView({ journey, states, onOpen }: { journey: Journey; states: Map<
               {words(n.title).map((w, i) => (
                 <text key={i} x={p.x + W / 2} y={p.y + 30 + i * 18} className="g-title">{w}</text>
               ))}
-              <text x={p.x + W / 2} y={p.y + H - 12} className="g-state">{ICON[st]} {STATE_LABEL[st]} · level {d.get(n.id)! + 1}</text>
+              <text x={p.x + W / 2} y={p.y + H - 12} className="g-state">Step {stepOf.get(n.id)} · {ICON[st]} {STATE_LABEL[st]}</text>
             </g>
           );
         })}
@@ -104,28 +95,21 @@ function GraphView({ journey, states, onOpen }: { journey: Journey; states: Map<
 function JourneyPage({ journey }: { journey: Journey }) {
   const store = useStore();
   const nav = useNavigate();
-  const [view, setView] = useState<"path" | "graph">(() => (window.innerWidth >= 900 ? "graph" : "path"));
-  const [confirm, setConfirm] = useState(false);
+  const [view, setView] = useState<"path" | "graph">("path");
 
   const progress = store.progress[journey.id];
   const states = nodeStates(journey, progress);
-  const access = store.hasAccess(journey.id);
-  const preview = previewNodeId(journey);
+  const order = recommendedOrder(journey);
   const pct = Math.round(completion(journey, progress) * 100);
-  const next = journey.nodes.find((n) => states.get(n.id) === "in-progress") ?? journey.nodes.find((n) => states.get(n.id) === "available");
+  const next = order.find((n) => states.get(n.id) === "in-progress") ?? order.find((n) => states.get(n.id) === "available");
   const minutes = journey.nodes.reduce((s, n) => s + n.estimatedMinutes, 0);
-
-  const start = () => {
-    if (access) return nav(`/j/${journey.id}/n/${next?.id ?? preview}`);
-    if (!store.profile.freeJourneyId) return setConfirm(true);
-    nav(`/unlock/${journey.id}`);
-  };
+  const nextStep = next ? order.indexOf(next) + 1 : 0;
 
   return (
     <div className="wrap" style={{ "--accent": journey.accent } as React.CSSProperties}>
       <nav className="crumbs"><Link to="/">All papers</Link></nav>
       <header className="j-head">
-        <span className="chip">{journey.field} · {journey.paper.year}</span>
+        <span className="chip">{journey.field} · {journey.paper.year} · free</span>
         <h1>{journey.title}</h1>
         <p className="j-sub">{journey.subtitle}</p>
         <p className="j-paper">
@@ -141,27 +125,15 @@ function JourneyPage({ journey }: { journey: Journey }) {
 
       <section className="j-progress">
         <div className="progress big" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Journey progress"><span style={{ width: `${pct}%` }} /></div>
-        <p>{pct}% · {journey.nodes.length} nodes · about {Math.round(minutes / 5) * 5} minutes</p>
-        <button className="btn primary block" onClick={start}>
-          {access ? (pct === 0 ? "Start the journey" : pct === 100 ? "Review" : `Continue: ${next?.title ?? ""}`) : store.profile.freeJourneyId ? "Unlock this journey" : "Start as your free journey"}
-        </button>
-        {!access && (
-          <p className="note">Try the first node, “{journey.nodes.find((n) => n.id === preview)!.title}”, free before you choose.</p>
+        <p>{pct}% · {journey.nodes.length} steps · about {Math.round(minutes / 5) * 5} minutes</p>
+        {next ? (
+          <button className="btn primary block" onClick={() => nav(`/j/${journey.id}/n/${next.id}`)}>
+            {pct === 0 ? "Start with step 1" : `Continue with step ${nextStep}: ${next.title}`}
+          </button>
+        ) : (
+          <button className="btn primary block" onClick={() => nav(`/j/${journey.id}/done`)}>Paper unlocked: see your reading plan</button>
         )}
       </section>
-
-      {confirm && (
-        <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="claim-title">
-          <div className="dialog-box">
-            <h2 id="claim-title">Make this your free journey?</h2>
-            <p>You get one journey free. Further journeys are paid. You can't swap your free journey later.</p>
-            <div className="row gap">
-              <button className="btn primary" onClick={async () => { await store.claimFree(journey.id); setConfirm(false); nav(`/j/${journey.id}/n/${preview}`); }}>Yes, start it</button>
-              <button className="btn ghost" onClick={() => setConfirm(false)}>Not yet</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <section className="j-map">
         <div className="row between">
@@ -171,8 +143,8 @@ function JourneyPage({ journey }: { journey: Journey }) {
             <button role="tab" aria-selected={view === "graph"} className={view === "graph" ? "on" : ""} onClick={() => setView("graph")}>Graph</button>
           </div>
         </div>
-        <p className="note">Pass a node's quiz to unlock the ideas that build on it.</p>
-        {view === "path" ? <PathView journey={journey} states={states} access={access} preview={preview} /> : <GraphView journey={journey} states={states} onOpen={(id) => nav(`/j/${journey.id}/n/${id}`)} />}
+        <p className="note">Work through the steps in order. Passing a step's quiz unlocks the steps that build on it; the graph shows how the ideas connect.</p>
+        {view === "path" ? <PathView journey={journey} states={states} order={order} next={next?.id} /> : <GraphView journey={journey} states={states} order={order} onOpen={(id) => nav(`/j/${journey.id}/n/${id}`)} />}
       </section>
 
       <section className="j-plan">

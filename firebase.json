@@ -43,7 +43,14 @@
   },
   "auth": {
     "providers": {
-      "anonymous": true
+      "anonymous": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "PaperPath",
+        "supportEmail": "tim@rewire.it",
+        "authorizedRedirectUris": [
+          "https://paperpath-learn.web.app/__/auth/handler"
+        ]
+      }
     }
   }
 }

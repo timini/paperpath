@@ -41,7 +41,7 @@ Not the target: people who want a full course in a subject, and people preparing
 
 ### 5.1 Journey map
 
-The home of a journey is its graph: nodes are concepts, edges point from prerequisite to dependant. The paper is the final node at the top.
+The home of a journey is a numbered sequence of steps: a single recommended order through the concept graph (every step after its prerequisites, authored order breaking ties). The next step to take is highlighted as "Next up", and passing a step leads straight to the next one. A graph view shows how the ideas connect: nodes are concepts, edges point from prerequisite to dependant, and the paper is the final step.
 
 Node states:
 
@@ -53,11 +53,11 @@ Node states:
 | Mastered | Quiz passed | Filled, tick |
 | Tested out | Skipped by passing the quiz without the lesson | Filled, lightning mark |
 
-On a phone the map is shown as a vertical path of levels (grouped by depth), with an optional zoomable graph view. On desktop the graph is primary.
+Steps are the default view on every screen size; the graph is a toggle.
 
 ### 5.2 Node
 
-Each node has, in order:
+Every step has at least one visual, a step-through diagram or an interactive; the build fails otherwise. Each node has, in order:
 
 1. Why you need this: one or two sentences tying the concept to a specific place in the paper.
 2. Lesson: 150 to 400 words in two or three short sections, scoped to the paper. Includes a "What we skip" note.
@@ -75,11 +75,15 @@ Each node has, in order:
 - Test out: a learner can take the quiz before the lesson. Passing marks the node as tested out.
 - Unlock rule: a node becomes available when every prerequisite is mastered or tested out.
 
-### 5.4 Interactives
+### 5.4 Visuals and interactives
+
+The visual style follows 3Blue1Brown: a dark stage, a small bright palette (blue, yellow, green, red), shapes that draw themselves and glide into place, and one idea per frame with a short caption. Diagrams start playing when scrolled into view and can be stepped manually.
+
+The `diagram` widget is the workhorse. Content describes shapes (boxes, circles, text, arrows, paths, areas) and a sequence of steps that reveal, highlight and move them, so a generator can produce explanatory animations as data. Paper nodes get an automatically generated map of the paper's argument.
 
 Interactives are built from a vetted library of React components, not generated code. The generator chooses a component and supplies its parameters as data. This keeps visuals safe, accessible and mobile-friendly, and lets the library grow as new journeys need new widgets.
 
-MVP library of 17 widgets (each is a component with a typed parameter schema):
+MVP library of 18 widgets (each is a component with a typed parameter schema):
 
 | Widget | Used for |
 |---|---|
@@ -99,6 +103,7 @@ MVP library of 17 widgets (each is a component with a typed parameter schema):
 | `softmax` | Turning scores into probabilities, with temperature |
 | `attention-heatmap` | Query-key scores over a short sentence |
 | `vector-dot` | Dragging two vectors and reading their dot product |
+| `diagram` | Step-through animated explanation, declared as shapes and steps |
 | `protein-contacts` | Residue distances as a contact map |
 
 Every widget must work with touch, fit a 360 px wide screen, and provide a text alternative.
@@ -119,19 +124,19 @@ Before a generated journey starts, a 3 to 5 minute diagnostic samples questions 
 
 The final node links to the paper (arXiv, DOI or publisher) and gives a guided reading plan: which sections to read in which order, and which concept each difficult passage depends on. PaperPath does not host paper PDFs it has no right to redistribute.
 
-## 6. Freemium model
+## 6. Pricing
 
-- Every signed-in user can start one journey free. They choose which.
-- Each further journey is a one-off purchase. Launch price: £4.99 per journey (to be tested).
-- A journey the user has started or bought stays available permanently.
-- Browsing the catalogue, viewing a journey map and opening the first node of any journey is free without purchase, so users can judge quality before choosing.
-- Uploading your own paper (v1) creates a new journey and counts as one journey.
+- **Reading is free.** Every journey in the catalogue, curated or generated, is free to read, with no account needed.
+- **Generating is paid.** Making a journey for a paper that isn't in the catalogue costs £5, one-off. Generating requires signing in with Google.
+- Once generated, the journey joins the public catalogue, so the next person reading that paper gets it free. (Generation from private uploads that shouldn't be published is a later option.)
+- Until generation and payments launch, the "Generate your own" page records requests from signed-in users without charging them.
 
 Enforcement:
 
-- The free choice is recorded once on the user document. Firestore rules allow it to be set only when absent.
-- Paid entitlements are written only by the backend after a verified Stripe webhook. Clients can read but never write entitlements.
-- Anonymous sign-in lets people try the app with no friction. Upgrading to Google sign-in keeps their progress. Purchases require a non-anonymous account.
+- Journey content is public-read and written only by the backend.
+- Requests (`journeyRequests`) can be created only by signed-in, non-anonymous users, for themselves; only the backend changes their status.
+- Paid generation entitlements are written only by the backend after a verified Stripe webhook.
+- Anonymous sign-in lets people learn with no friction; signing in with Google upgrades the same account, so progress is kept.
 
 ## 7. Dynamic generation (v1)
 
@@ -173,7 +178,7 @@ Concepts have canonical IDs shared across journeys (for example `linear-algebra/
 |---|---|
 | Front end | React, TypeScript, Vite; React Router; KaTeX for maths |
 | Hosting | Firebase Hosting |
-| Auth | Firebase Auth: anonymous, then Google |
+| Auth | Firebase Auth: anonymous by default, Google sign-in upgrading the same account |
 | Database | Cloud Firestore |
 | Backend (v1) | Cloud Functions for entitlement and Stripe webhooks; Cloud Run job for generation with the Claude Agent SDK |
 | Payments (v1) | Stripe Checkout; webhook writes entitlements |
@@ -304,7 +309,6 @@ users/{uid}/attempts/{attemptId}          (v1 analytics)
 
 ## 16. Open questions
 
-1. Final price per journey, and whether to offer a bundle.
-2. Whether generated journeys are private to the buyer or published to the catalogue.
-3. Whether to allow users to edit or rate nodes.
-4. Which verification threshold blocks a node from being shown.
+1. Final generation price (launching at £5), and whether to offer bundles.
+2. Whether to allow users to edit or rate nodes.
+3. Which verification threshold blocks a node from being shown.

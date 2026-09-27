@@ -111,3 +111,21 @@ export function completion(journey: Journey, progress: JourneyProgress | undefin
   const done = journey.nodes.filter((n) => isDone(states.get(n.id)!)).length;
   return done / journey.nodes.length;
 }
+
+/**
+ * A single recommended order through the graph: every node comes after its prerequisites, and
+ * among nodes that are ready at the same time the authored order wins. Learners see this as
+ * numbered steps.
+ */
+export function recommendedOrder(journey: Journey): JourneyNode[] {
+  const pre = prerequisites(journey);
+  const done = new Set<string>();
+  const out: JourneyNode[] = [];
+  while (out.length < journey.nodes.length) {
+    const next = journey.nodes.find((n) => !done.has(n.id) && (pre.get(n.id) ?? []).every((p) => done.has(p)));
+    if (!next) break; // cycle; graphProblems reports it
+    done.add(next.id);
+    out.push(next);
+  }
+  return out;
+}

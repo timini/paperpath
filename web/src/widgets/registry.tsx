@@ -4,6 +4,7 @@ import { BasePairing, ProteinContacts, basePairingSchema, proteinContactsSchema 
 import { ComputationGraph, TuringMachine, computationGraphSchema, turingSchema } from "./computation";
 import { KeyExchange, ModularArithmetic, keyExchangeSchema, modularSchema } from "./crypto";
 import { PayoffMatrix, payoffSchema } from "./games";
+import { Diagram, diagramSchema } from "./diagram";
 import { ChannelNoise, EntropyCalculator, channelSchema, entropySchema } from "./information";
 import { AttentionHeatmap, GradientDescent, Neuron, Softmax, VectorDot, attentionSchema, gradientDescentSchema, neuronSchema, softmaxSchema, vectorDotSchema } from "./ml";
 import { HubblePlot, LorenzAttractor, Redshift, hubbleSchema, lorenzSchema, redshiftSchema } from "./physics";
@@ -21,6 +22,7 @@ interface WidgetDef {
  * can only choose from these components.
  */
 export const WIDGETS: Record<string, WidgetDef> = {
+  diagram: { component: Diagram, schema: diagramSchema, title: "Step-through diagram" },
   "turing-machine": { component: TuringMachine, schema: turingSchema, title: "Turing machine" },
   "computation-graph": { component: ComputationGraph, schema: computationGraphSchema, title: "Computation graph" },
   "entropy-calculator": { component: EntropyCalculator, schema: entropySchema, title: "Entropy calculator" },

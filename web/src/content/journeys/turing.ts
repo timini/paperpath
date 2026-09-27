@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/turing";
 
 const turing: Journey = {
   id: "turing-1936",
@@ -728,4 +730,4 @@ const turing: Journey = {
   ],
 };
 
-export default turing;
+export default withVisuals(turing, visuals);

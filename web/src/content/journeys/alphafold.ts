@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/alphafold";
 
 const alphafold: Journey = {
   id: "alphafold-2021",
@@ -644,4 +646,4 @@ const alphafold: Journey = {
   ],
 };
 
-export default alphafold;
+export default withVisuals(alphafold, visuals);

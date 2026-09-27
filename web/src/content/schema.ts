@@ -50,7 +50,7 @@ export const nodeSchema = z.object({
   title: text,
   kind: z.enum(["concept", "paper"]),
   whyYouNeedThis: text,
-  lesson: z.array(z.object({ heading: text, body: text })).min(1),
+  lesson: z.array(z.object({ heading: text, body: text, visual: interactiveSchema.optional() })).min(1),
   whatWeSkip: z.string(),
   interactive: interactiveSchema.optional(),
   workedExample: z

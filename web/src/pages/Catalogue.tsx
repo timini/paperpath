@@ -1,26 +1,26 @@
 import { Link } from "react-router-dom";
 import { CATALOG } from "../content/catalog";
 import { useStore } from "../lib/store";
-import { PRICE } from "./Paywall";
+import { PRICE } from "./Create";
 
 export default function Catalogue() {
-  const { progress, profile, hasAccess } = useStore();
+  const { progress } = useStore();
   return (
     <div className="wrap">
       <section className="hero">
         <h1>Understand the papers that changed the world</h1>
         <p>
           Each journey maps the ideas a landmark paper depends on, teaches only what that paper needs, and lets you
-          prove it with a quiz before moving on. Your first journey is free.
+          prove it with a quiz before moving on. All ten journeys are free.
         </p>
         <ol className="how">
           <li><strong>Pick a paper.</strong> See the map of ideas behind it.</li>
-          <li><strong>Learn one node at a time.</strong> Short lessons with something to play with.</li>
+          <li><strong>Learn one step at a time.</strong> Short lessons, each with a diagram or something to play with.</li>
           <li><strong>Pass the quiz</strong> to unlock what comes next, until the paper makes sense.</li>
         </ol>
-        {profile.freeJourneyId ? (
-          <p className="note">Your free journey: <Link to={`/j/${profile.freeJourneyId}`}>{CATALOG.find((j) => j.id === profile.freeJourneyId)?.title}</Link>. Further journeys cost {PRICE} each.</p>
-        ) : null}
+        <Link to="/create" className="create-cta">
+          <strong>Reading a different paper?</strong> Get a journey made for it: {PRICE} per paper →
+        </Link>
       </section>
       <ul className="cards">
         {CATALOG.map((j) => {
@@ -37,12 +37,12 @@ export default function Catalogue() {
                 <h2>{j.title}</h2>
                 <p className="card-sub">{j.subtitle}</p>
                 <p className="card-meta">
-                  {j.authors} · {j.nodeCount} nodes · about {Math.round(j.minutes / 5) * 5} min
+                  {j.authors} · {j.nodeCount} steps · about {Math.round(j.minutes / 5) * 5} min
                 </p>
                 <div className="card-foot">
                   <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Journey progress"><span style={{ width: `${pct}%` }} /></div>
                   <span className="card-status">
-                    {hasAccess(j.id) ? (pct === 100 ? "Paper unlocked" : started ? `${pct}% done` : "Unlocked") : profile.freeJourneyId ? PRICE : "Free to start"}
+                    {pct === 100 ? "Paper unlocked" : started ? `${pct}% done` : "Free"}
                   </span>
                 </div>
               </Link>

@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/transformer";
 
 const transformer: Journey = {
   id: "transformer-2017",
@@ -656,4 +658,4 @@ const transformer: Journey = {
   ],
 };
 
-export default transformer;
+export default withVisuals(transformer, visuals);

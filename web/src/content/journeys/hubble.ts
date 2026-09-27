@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/hubble";
 
 // Distances (Mpc) and velocities (km/s) of the 24 nebulae in Table 1 of Hubble (1929).
 const TABLE1 = [
@@ -598,4 +600,4 @@ const hubble: Journey = {
   ],
 };
 
-export default hubble;
+export default withVisuals(hubble, visuals);

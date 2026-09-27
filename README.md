@@ -9,7 +9,7 @@ Live: https://paperpath-learn.web.app
 
 ## Status
 
-The MVP is live with ten hand-built journeys for landmark papers, from Hubble (1929) to AlphaFold (2021): 83 nodes, 269 quiz questions and 26 interactives built from a library of 17 widgets. Dynamic generation from an uploaded paper, with the Claude Agent SDK, and Stripe payments are v1 work (epics 8 to 10).
+Live with ten free journeys for landmark papers, from Hubble (1929) to AlphaFold (2021): 83 steps and 269 quiz questions. Every step has a visual: 57 animated step-through diagrams in a 3Blue1Brown-style dark stage, plus 26 hands-on interactives from a library of 18 widgets. Reading is free; generating a journey for your own paper is £5 (requests are recorded now; generation with the Claude Agent SDK and Stripe payments are epics 8 and 9). Sign-in is Firebase Auth: anonymous by default, with Google sign-in that keeps your progress.
 
 ## Layout
 
@@ -44,8 +44,8 @@ Deploy from the repo root: `firebase deploy --only hosting,firestore,auth`.
 
 ## Adding a journey
 
-1. Write `web/src/content/journeys/<id>.ts` following the `Journey` type in `src/content/schema.ts`. Use only widgets registered in `src/widgets/registry.tsx`.
+1. Write `web/src/content/journeys/<id>.ts` following the `Journey` type in `src/content/schema.ts`, and its diagrams in `journeys/visuals/<id>.ts` using the helpers in `src/content/diagram.ts`. Every step needs a visual; use only widgets registered in `src/widgets/registry.tsx`.
 2. Add it to `src/content/journeys/index.ts`.
-3. Run `npm run validate:content` and `npm test`. Check its interactives at `/widgets`.
+3. Run `npm run validate:content` and `npm test`. Check its visuals at `/widgets?journey=<id>`.
 
 Generated journeys (v1) will use the same schema and validator.

@@ -1,4 +1,6 @@
 import type { Journey } from "../schema";
+import { withVisuals } from "../diagram";
+import visuals from "./visuals/nash";
 
 const nash: Journey = {
   id: "nash-1950",
@@ -626,4 +628,4 @@ const nash: Journey = {
   ],
 };
 
-export default nash;
+export default withVisuals(nash, visuals);

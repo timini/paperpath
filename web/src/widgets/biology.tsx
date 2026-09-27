@@ -78,7 +78,10 @@ export function ProteinContacts({ params }: { params: z.infer<typeof proteinCont
   const xs = params.coords.map((c) => c[0]);
   const ys = params.coords.map((c) => c[1]);
   const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const sc = (v: number, a: number, b: number) => 15 + ((v - a) / (b - a || 1)) * 170;
+  // One scale for both axes so the chain keeps its true shape.
+  const span = Math.max(maxX - minX, maxY - minY) || 1;
+  const offX = (span - (maxX - minX)) / 2, offY = (span - (maxY - minY)) / 2;
+  const sc = (v: number, a: number, _b: number) => 15 + ((v - a + (a === minX ? offX : offY)) / span) * 170;
   const cell = 180 / n;
 
   return (

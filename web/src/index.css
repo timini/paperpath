@@ -154,7 +154,8 @@ main { min-height: 70vh; padding-bottom: 48px; }
 .g-node.paper { stroke-width: 3; }
 .g-node.s-available, .g-node.s-in-progress { stroke: var(--accent); stroke-width: 3; }
 .g-node.s-mastered, .g-node.s-tested-out { fill: var(--good-bg); stroke: var(--good); }
-.g-node.s-locked { opacity: 0.55; }
+.g-node.s-locked { stroke-dasharray: 5 4; }
+.g-link.locked .g-title, .g-link.locked .g-state { fill: var(--ink-3); }
 .g-title { text-anchor: middle; font: 600 14px var(--sans); fill: var(--ink); }
 .g-state { text-anchor: middle; font: 12px var(--sans); fill: var(--ink-3); }
 .g-link { cursor: pointer; }

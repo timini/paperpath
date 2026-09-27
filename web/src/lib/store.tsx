@@ -20,6 +20,9 @@ interface Saved {
 
 export const XP = { mastered: 100, firstTryBonus: 50, testedOut: 60 };
 
+/** Marker in the pending set meaning "save the profile even if no journey changed". */
+const PROFILE = "__profile__";
+
 const EMPTY: Saved = { profile: { xp: 0, streak: { current: 0 } }, progress: {} };
 const KEY = "paperpath:v1";
 
@@ -85,22 +88,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setSaved((local) => {
           const remote = profileSnap.data() as Partial<Profile> | undefined;
           const progress = { ...local.progress };
+          const remoteIds = new Set<string>();
           progressSnap.forEach((d) => {
+            remoteIds.add(d.id);
             const r = d.data() as JourneyProgress;
             const l = progress[d.id];
-            progress[d.id] = !l || (r.updatedAt ?? 0) > l.updatedAt ? r : l;
+            if (!l || (r.updatedAt ?? 0) >= l.updatedAt) progress[d.id] = r;
+            else pending.current.add(d.id); // local is newer: save it
           });
-          return {
-            profile: {
-              freeJourneyId: remote?.freeJourneyId ?? local.profile.freeJourneyId,
-              xp: Math.max(remote?.xp ?? 0, local.profile.xp),
-              streak: remote?.streak ?? local.profile.streak,
-            },
-            progress,
+          // Local progress that never reached the server (for example, the tab closed mid-save).
+          for (const id of Object.keys(local.progress)) if (!remoteIds.has(id)) pending.current.add(id);
+          const profile: Profile = {
+            freeJourneyId: remote?.freeJourneyId ?? local.profile.freeJourneyId,
+            xp: Math.max(remote?.xp ?? 0, local.profile.xp),
+            streak: (remote?.streak?.lastDay ?? "") >= (local.profile.streak.lastDay ?? "") ? remote?.streak ?? local.profile.streak : local.profile.streak,
           };
+          if (!remote || profile.xp !== remote.xp || profile.freeJourneyId !== remote.freeJourneyId) pending.current.add(PROFILE);
+          return { profile, progress };
         });
         setSynced(true);
-      } catch {
+      } catch (e) {
+        console.warn("PaperPath: could not load saved progress; working offline.", e);
         setSynced(false);
       }
     });
@@ -123,7 +131,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         },
         { merge: true },
       );
-      await Promise.all(journeyIds.map((j) => s.progress[j] && setDoc(doc(db, "users", user.uid, "progress", j), s.progress[j])));
+      await Promise.all(
+        journeyIds.filter((j) => j !== PROFILE && s.progress[j]).map((j) => setDoc(doc(db, "users", user.uid, "progress", j), s.progress[j])),
+      );
     },
     [user, synced],
   );
@@ -132,7 +142,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!synced || !pending.current.size) return;
     const ids = [...pending.current];
     pending.current.clear();
-    push(saved, ids).catch(() => ids.forEach((i) => pending.current.add(i)));
+    push(saved, ids).catch((e) => {
+      console.warn("PaperPath: could not save progress; will retry.", e);
+      ids.forEach((i) => pending.current.add(i));
+    });
   }, [saved, synced, push]);
 
   const update = (journeyId: string, fn: (s: Saved) => Saved) => {

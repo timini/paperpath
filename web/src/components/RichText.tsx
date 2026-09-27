@@ -1,10 +1,30 @@
-import katex from "katex";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+import type Katex from "katex";
+
+// KaTeX is large, so it loads only when some text on screen contains maths.
+let katex: typeof Katex | null = null;
+let loading: Promise<void> | null = null;
+function useKatex(needed: boolean): boolean {
+  const [ready, setReady] = useState(!!katex);
+  useEffect(() => {
+    if (!needed || katex) return;
+    loading ??= Promise.all([import("katex"), import("katex/dist/katex.min.css")]).then(([m]) => {
+      katex = m.default;
+    });
+    let live = true;
+    loading.then(() => live && setReady(true));
+    return () => {
+      live = false;
+    };
+  }, [needed]);
+  return ready;
+}
 
 // Lesson text format: paragraphs separated by blank lines; lines starting "- " form a list;
 // inline **bold**, *italic*, `code`, $inline maths$ and $$display maths$$ (KaTeX).
 
 function renderMath(tex: string, display: boolean, key: string) {
+  if (!katex) return <code key={key} className="math-pending">{tex}</code>;
   const html = katex.renderToString(tex, { displayMode: display, throwOnError: false, strict: "ignore" });
   return display ? (
     <div key={key} className="math-display" dangerouslySetInnerHTML={{ __html: html }} />
@@ -14,6 +34,7 @@ function renderMath(tex: string, display: boolean, key: string) {
 }
 
 export function Inline({ text }: { text: string }) {
+  useKatex(text.includes("$"));
   const out: ReactNode[] = [];
   const re = /\$\$([^$]+)\$\$|\$([^$]+)\$|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
   let last = 0;
@@ -34,6 +55,7 @@ export function Inline({ text }: { text: string }) {
 }
 
 export function RichText({ text }: { text: string }) {
+  useKatex(text.includes("$"));
   const blocks = text.trim().split(/\n\s*\n/);
   return (
     <>

@@ -114,15 +114,18 @@ export function LorenzAttractor({ params }: { params: z.infer<typeof lorenzSchem
   const [rho, setRho] = useState(params.rho);
   const [running, setRunning] = useState(!prefersReducedMotion());
   const [t, setT] = useState(0);
+  const [sep, setSep] = useState(params.delta);
   const fresh = () => ({ a: [1, 1, 1] as P3, b: [1 + params.delta, 1, 1] as P3, trailA: [] as P3[], trailB: [] as P3[] });
   const state = useRef(fresh());
   const reset = () => {
     state.current = fresh();
     setT(0);
+    setSep(params.delta);
   };
   useEffect(() => {
     state.current = fresh();
     setT(0);
+    setSep(params.delta);
   }, [rho, params.delta]); // eslint-disable-line react-hooks/exhaustive-deps
   const [wrap, w] = useWidth<HTMLDivElement>();
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -138,6 +141,7 @@ export function LorenzAttractor({ params }: { params: z.infer<typeof lorenzSchem
     s.trailA.push(s.a);
     s.trailB.push(s.b);
     if (s.trailA.length > 600) { s.trailA.shift(); s.trailB.shift(); }
+    setSep(Math.hypot(s.a[0] - s.b[0], s.a[1] - s.b[1], s.a[2] - s.b[2]));
     setT((x) => x + steps * 0.005);
   };
   useAnimationFrame(advance, running);
@@ -160,8 +164,6 @@ export function LorenzAttractor({ params }: { params: z.infer<typeof lorenzSchem
     draw(s.trailB, "#e11d48");
   }, [t, w, h]);
 
-  const s = state.current;
-  const sep = Math.hypot(s.a[0] - s.b[0], s.a[1] - s.b[1], s.a[2] - s.b[2]);
   return (
     <div ref={wrap}>
       <canvas ref={canvas} width={w} height={h} className="w-canvas" role="img"

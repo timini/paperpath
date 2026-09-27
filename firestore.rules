@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Security model: docs/SPEC.md sections 6 and 9.3.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Journey content: public read, written only by the backend.
+    match /journeys/{journeyId} {
+      allow read: if true;
+      allow write: if false;
+      match /nodes/{nodeId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    match /users/{uid} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function validProfile(d) {
+        return d.keys().hasOnly(['xp', 'streak', 'freeJourneyId', 'createdAt', 'displayName'])
+          && d.xp is int && d.xp >= 0
+          && (!('freeJourneyId' in d) || (d.freeJourneyId is string && d.freeJourneyId.size() <= 64));
+      }
+
+      allow read: if isOwner();
+      allow create: if isOwner() && validProfile(request.resource.data);
+      // XP never decreases; the free journey is chosen once and never changed.
+      allow update: if isOwner()
+        && validProfile(request.resource.data)
+        && request.resource.data.xp >= resource.data.xp
+        && (!('freeJourneyId' in resource.data)
+            || request.resource.data.freeJourneyId == resource.data.freeJourneyId);
+      allow delete: if false;
+
+      match /progress/{journeyId} {
+        allow read: if isOwner();
+        allow write: if isOwner() && journeyId.size() <= 64;
+      }
+
+      // Paid entitlements are written only by the payment backend (Epic 8).
+      match /entitlements/{journeyId} {
+        allow read: if isOwner();
+        allow write: if false;
+      }
+    }
+  }
+}

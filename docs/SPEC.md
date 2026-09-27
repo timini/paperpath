@@ -198,7 +198,7 @@ journeys/{journeyId}
 journeys/{journeyId}/nodes/{nodeId}
   conceptId, title, kind: concept | paper
   whyYouNeedThis, lesson[{ heading, body }], whatWeSkip
-  interactive { widget, params, caption, altText }
+  interactive { widget, params, caption, altText }   (params stored as paramsJson string: Firestore can't nest arrays)
   workedExample { prompt, steps[], answer }
   inThePaper { text, sections[] }
   quiz { passMark, questions[] }

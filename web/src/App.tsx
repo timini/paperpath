@@ -1,12 +1,14 @@
 import { Link, Route, Routes, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { useStore } from "./lib/store";
 import Catalogue from "./pages/Catalogue";
 import JourneyPage from "./pages/JourneyPage";
-import NodePage from "./pages/NodePage";
 import Paywall from "./pages/Paywall";
-import Complete from "./pages/Complete";
-import WidgetGallery from "./pages/WidgetGallery";
+
+// Lesson screens pull in the widget library; load them on demand.
+const NodePage = lazy(() => import("./pages/NodePage"));
+const Complete = lazy(() => import("./pages/Complete"));
+const WidgetGallery = lazy(() => import("./pages/WidgetGallery"));
 import NotFound from "./pages/NotFound";
 
 function Header() {
@@ -45,6 +47,7 @@ export default function App() {
       <ScrollToTop />
       <Header />
       <main>
+        <Suspense fallback={<div className="wrap narrow"><p className="note">Loading…</p></div>}>
         <Routes>
           <Route path="/" element={<Catalogue />} />
           <Route path="/j/:journeyId" element={<JourneyPage />} />
@@ -54,6 +57,7 @@ export default function App() {
           <Route path="/widgets" element={<WidgetGallery />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </main>
       <footer className="foot">
         <div className="wrap">

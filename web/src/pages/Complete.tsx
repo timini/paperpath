@@ -1,15 +1,12 @@
-import { Link, useParams } from "react-router-dom";
-import { getJourney } from "../content/journeys";
+import { Link } from "react-router-dom";
+import { withJourney } from "../components/WithJourney";
+import type { Journey } from "../content/schema";
 import { completion } from "../content/graph";
 import { useStore } from "../lib/store";
 import { Inline } from "../components/RichText";
-import NotFound from "./NotFound";
 
-export default function Complete() {
-  const { journeyId = "" } = useParams();
-  const journey = getJourney(journeyId);
+function Complete({ journey }: { journey: Journey }) {
   const { progress } = useStore();
-  if (!journey) return <NotFound />;
   const p = progress[journey.id];
   const pct = Math.round(completion(journey, p) * 100);
   const firstTry = journey.nodes.filter((n) => p?.nodes[n.id]?.attempts === 1 && ["mastered", "tested-out"].includes(p.nodes[n.id].state)).length;
@@ -34,3 +31,5 @@ export default function Complete() {
     </div>
   );
 }
+
+export default withJourney(Complete);

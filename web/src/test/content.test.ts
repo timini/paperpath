@@ -157,3 +157,16 @@ describe("numeric answer keys, recomputed independently", () => {
     expect(6 * 2 + 4 * 3).toBe(numericAnswer("watson-crick-1953", "pairing", "bp3"));
   });
 });
+
+describe("generated catalogue", () => {
+  it("matches the journeys (run `npm run build` to regenerate)", async () => {
+    const { CATALOG } = await import("../content/catalog");
+    expect(CATALOG.map((c) => c.id)).toEqual(JOURNEYS.map((j) => j.id));
+    for (const c of CATALOG) {
+      const j = getJourney(c.id)!;
+      expect(c.nodeCount).toBe(j.nodes.length);
+      expect(c.title).toBe(j.title);
+      expect(c.previewNodeId).toBe(previewNodeId(j));
+    }
+  });
+});

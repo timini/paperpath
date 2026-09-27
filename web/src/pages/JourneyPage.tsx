@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { getJourney } from "../content/journeys";
+import { Link, useNavigate } from "react-router-dom";
+import { withJourney } from "../components/WithJourney";
 import { completion, depths, levels, nodeStates, previewNodeId } from "../content/graph";
 import type { Journey, NodeState } from "../content/schema";
 import { useStore } from "../lib/store";
 import { Inline, RichText } from "../components/RichText";
-import NotFound from "./NotFound";
 
 const STATE_LABEL: Record<NodeState, string> = {
   locked: "Locked",
@@ -102,14 +101,11 @@ function GraphView({ journey, states, onOpen }: { journey: Journey; states: Map<
   );
 }
 
-export default function JourneyPage() {
-  const { journeyId = "" } = useParams();
-  const journey = getJourney(journeyId);
+function JourneyPage({ journey }: { journey: Journey }) {
   const store = useStore();
   const nav = useNavigate();
   const [view, setView] = useState<"path" | "graph">(() => (window.innerWidth >= 900 ? "graph" : "path"));
   const [confirm, setConfirm] = useState(false);
-  if (!journey) return <NotFound />;
 
   const progress = store.progress[journey.id];
   const states = nodeStates(journey, progress);
@@ -144,7 +140,7 @@ export default function JourneyPage() {
       </section>
 
       <section className="j-progress">
-        <div className="progress big" aria-label={`${pct}% complete`}><span style={{ width: `${pct}%` }} /></div>
+        <div className="progress big" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Journey progress"><span style={{ width: `${pct}%` }} /></div>
         <p>{pct}% · {journey.nodes.length} nodes · about {Math.round(minutes / 5) * 5} minutes</p>
         <button className="btn primary block" onClick={start}>
           {access ? (pct === 0 ? "Start the journey" : pct === 100 ? "Review" : `Continue: ${next?.title ?? ""}`) : store.profile.freeJourneyId ? "Unlock this journey" : "Start as your free journey"}
@@ -192,3 +188,5 @@ export default function JourneyPage() {
     </div>
   );
 }
+
+export default withJourney(JourneyPage);

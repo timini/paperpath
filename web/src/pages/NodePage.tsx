@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { getJourney } from "../content/journeys";
+import { withJourney } from "../components/WithJourney";
+import type { Journey } from "../content/schema";
 import { nodeStates, prerequisites, previewNodeId } from "../content/graph";
 import { useStore } from "../lib/store";
 import { RichText, Inline } from "../components/RichText";
@@ -8,30 +9,30 @@ import Quiz from "../components/Quiz";
 import Widget from "../components/Widget";
 import NotFound from "./NotFound";
 
-export default function NodePage() {
-  const { journeyId = "", nodeId = "" } = useParams();
-  const journey = getJourney(journeyId);
-  const node = journey?.nodes.find((n) => n.id === nodeId);
+function NodePage({ journey }: { journey: Journey }) {
+  const { nodeId = "" } = useParams();
+  const journeyId = journey.id;
+  const node = journey.nodes.find((n) => n.id === nodeId);
   const store = useStore();
   const nav = useNavigate();
   const [mode, setMode] = useState<"learn" | "testout">("learn");
   const [earned, setEarned] = useState<number | null>(null);
-  const access = journey ? store.hasAccess(journey.id) : false;
-  const isPreview = journey ? previewNodeId(journey) === nodeId : false;
-  const states = journey ? nodeStates(journey, store.progress[journey.id]) : new Map();
+  const access = store.hasAccess(journey.id);
+  const isPreview = previewNodeId(journey) === nodeId;
+  const states = nodeStates(journey, store.progress[journey.id]);
   const state = states.get(nodeId);
 
   useEffect(() => {
-    if (journey && node && (access || isPreview) && state !== "locked") store.openNode(journey.id, node.id);
+    if (node && (access || isPreview) && state !== "locked") store.openNode(journey.id, node.id);
     setEarned(null);
     setMode("learn");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyId, nodeId]);
 
-  if (!journey || !node) return <NotFound />;
+  if (!node) return <NotFound />;
   if (!access && !isPreview) return <Navigate to={`/unlock/${journey.id}`} replace />;
   if (state === "locked") {
-    const missing = (prerequisites(journey).get(node.id) ?? []).filter((p) => !["mastered", "tested-out"].includes(states.get(p)));
+    const missing = (prerequisites(journey).get(node.id) ?? []).filter((p) => !["mastered", "tested-out"].includes(states.get(p) ?? "locked"));
     return (
       <div className="wrap narrow">
         <nav className="crumbs"><Link to={`/j/${journey.id}`}>← {journey.title}</Link></nav>
@@ -126,3 +127,5 @@ export default function NodePage() {
     </article>
   );
 }
+
+export default withJourney(NodePage);

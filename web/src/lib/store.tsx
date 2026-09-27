@@ -1,8 +1,7 @@
-import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import type { User } from "firebase/auth";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { JourneyProgress, NodeProgress } from "../content/schema";
-import { auth, db } from "./firebase";
+import { firebase } from "./firebase";
 
 // Learner state (SPEC 9.2). Always kept in localStorage so the app works signed out or
 // offline; mirrored to Firestore when an anonymous or signed-in account is available.
@@ -72,7 +71,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Sign in anonymously; merge any remote state with local state.
   useEffect(() => {
-    const off = onAuthStateChanged(auth, async (u) => {
+    let off = () => {};
+    let cancelled = false;
+    firebase().then(({ auth, db, authMod, fsMod }) => {
+      if (cancelled) return;
+      const { onAuthStateChanged, signInAnonymously } = authMod;
+      const { collection, doc, getDoc, getDocs } = fsMod;
+      off = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (!u) {
         signInAnonymously(auth).catch(() => setSynced(false));
@@ -111,14 +116,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         console.warn("PaperPath: could not load saved progress; working offline.", e);
         setSynced(false);
       }
+      });
     });
-    return off;
+    return () => {
+      cancelled = true;
+      off();
+    };
   }, []);
 
   // Push local changes to Firestore once signed in.
   const push = useCallback(
     async (s: Saved, journeyIds: string[]) => {
       if (!user || !synced) return;
+      const { db, fsMod } = await firebase();
+      const { doc, getDoc, serverTimestamp, setDoc } = fsMod;
       const ref = doc(db, "users", user.uid);
       const exists = (await getDoc(ref)).exists();
       await setDoc(

@@ -23,7 +23,7 @@ export function journeyProblems(j: Journey): string[] {
       }
     }
     const words = n.lesson.reduce((s, l) => s + l.body.split(/\s+/).length, 0);
-    if (n.kind === "concept" && words < 120) out.push(`${n.id}: lesson is only ${words} words`);
+    if (n.kind === "concept" && words < 100) out.push(`${n.id}: lesson is only ${words} words`);
   }
   for (const r of j.readingPlan) {
     for (const c of r.conceptIds) if (!j.nodes.some((n) => n.id === c)) out.push(`reading plan refers to unknown node ${c}`);

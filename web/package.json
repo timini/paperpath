@@ -1,13 +1,15 @@
 {
-  "name": "web",
+  "name": "paperpath-web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
+    "build": "npm run validate:content && tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "validate:content": "tsx scripts/validate-content.ts",
+    "lint": "oxlint"
   },
   "dependencies": {
     "firebase": "^12.19.0",

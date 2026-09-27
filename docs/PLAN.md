@@ -48,7 +48,7 @@ Done when: a learner can complete a full journey end to end on a phone.
 The vetted components from SPEC 5.4.
 
 - Widget registry mapping names to components and parameter schemas.
-- Fifteen MVP widgets, each touch-friendly, responsive and with alt text.
+- Seventeen MVP widgets, each touch-friendly, responsive and with alt text.
 - Reduced-motion support.
 - A dev gallery page that renders every widget with sample parameters.
 

@@ -60,7 +60,7 @@ On a phone the map is shown as a vertical path of levels (grouped by depth), wit
 Each node has, in order:
 
 1. Why you need this: one or two sentences tying the concept to a specific place in the paper.
-2. Lesson: 300 to 600 words in short sections, scoped to the paper. Includes a "What we skip" note.
+2. Lesson: 150 to 400 words in two or three short sections, scoped to the paper. Includes a "What we skip" note.
 3. Interactive: one visual the learner manipulates (see 5.4).
 4. Worked example: in the paper's notation.
 5. In the paper: where and how the paper uses the idea, with section references.
@@ -79,7 +79,7 @@ Each node has, in order:
 
 Interactives are built from a vetted library of React components, not generated code. The generator chooses a component and supplies its parameters as data. This keeps visuals safe, accessible and mobile-friendly, and lets the library grow as new journeys need new widgets.
 
-MVP library (each is a component with a typed parameter schema):
+MVP library of 17 widgets (each is a component with a typed parameter schema):
 
 | Widget | Used for |
 |---|---|
@@ -88,12 +88,14 @@ MVP library (each is a component with a typed parameter schema):
 | `channel-noise` | Sending bits through a noisy channel |
 | `base-pairing` | Pairing bases and seeing the double helix constraint |
 | `hubble-plot` | Fitting a line to distance and velocity data |
+| `redshift` | Shifting a spectral line with recession velocity |
 | `payoff-matrix` | Finding best responses and equilibria in a 2x2 game |
 | `lorenz-attractor` | Running the Lorenz system and comparing nearby starts |
 | `modular-arithmetic` | Clock arithmetic and modular exponentiation |
 | `key-exchange` | Walking through Diffie-Hellman with small numbers |
 | `gradient-descent` | Stepping down a loss surface with a learning rate |
 | `neuron` | Weighted sum, bias and activation for one unit |
+| `computation-graph` | Forward and backward passes through a small loss |
 | `softmax` | Turning scores into probabilities, with temperature |
 | `attention-heatmap` | Query-key scores over a short sentence |
 | `vector-dot` | Dragging two vectors and reading their dot product |

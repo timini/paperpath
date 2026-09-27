@@ -1,12 +1,17 @@
 import type { Journey } from "../schema";
+import hubble from "./hubble";
 import turing from "./turing";
 import shannon from "./shannon";
-import watsonCrick from "./watson-crick";
-import hubble from "./hubble";
 import nash from "./nash";
+import watsonCrick from "./watson-crick";
 import lorenz from "./lorenz";
+import diffieHellman from "./diffie-hellman";
+import backprop from "./backprop";
+import transformer from "./transformer";
+import alphafold from "./alphafold";
 
-export const JOURNEYS: Journey[] = [turing, hubble, shannon, nash, watsonCrick, lorenz];
+/** The ten launch journeys (docs/SPEC.md section 10), in publication order. */
+export const JOURNEYS: Journey[] = [hubble, turing, shannon, nash, watsonCrick, lorenz, diffieHellman, backprop, transformer, alphafold];
 
 export function getJourney(id: string): Journey | undefined {
   return JOURNEYS.find((j) => j.id === id);

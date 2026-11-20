@@ -1,3 +1,4 @@
+import { trackPageview } from "./lib/pageview";
 import { Link, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { useStore } from "./lib/store";
@@ -65,6 +66,7 @@ function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+    if (import.meta.env.PROD) trackPageview(pathname, import.meta.env.VITE_GA_MEASUREMENT_ID);
   }, [pathname]);
   return null;
 }
